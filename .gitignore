@@ -1,0 +1,8 @@
+rendercv_output/
+__pycache__/
+.direnv/
+/.vscode
+
+# nix build output
+/result
+themes/resume.yaml
