@@ -5,4 +5,5 @@ __pycache__/
 
 # nix build output
 /result
-themes/resume.yaml
+
+resume.yaml

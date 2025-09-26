@@ -75,12 +75,14 @@
         chmod -R u+w "$TMPDIR/themes"
 
         # [[ RUNNING RenderCV ]]
-        ln -s "$INPUT_YAML" "$TMPDIR/themes/resume.yaml"
+        yq 'del(.design.ansi)' "$INPUT_YAML" > "$TMPDIR/themes/resume.yaml"
         cd "$TMPDIR/themes"
         rendercv render resume.yaml -nopng -nohtml --pdf-path "../resume.pdf" --markdown-path "../resume.ansi.json"
 
         # [[ ANSI PROCESSING ]]
-        json2ansi "../resume.ansi.json" --output "../resume.ansi"
+        json2ansi "../resume.ansi.json" \
+            --output "../resume.ansi" \
+            --width "$(yq '.design.ansi.width // 100' "$INPUT_YAML")"
 
         # [[ YAML PROCESSING ]]
         # removes the 'design' section, and all the comments
@@ -100,6 +102,9 @@
 
         # cleaned yaml <- (yq) <- yaml
         cp "$TMPDIR/resume.yaml" "$OUTPUT_DIR/${resumeFileName}.yaml"
+
+        # .ansi.json
+        # cp "$TMPDIR/resume.ansi.json" "$OUTPUT_DIR/${resumeFileName}.ansi.json"
 
 
 
