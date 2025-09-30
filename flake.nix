@@ -14,16 +14,22 @@
         inherit system;
       };
 
-      scriptName = "resume-pipeline";
-      resumeFileName = "Zyad_Yasser_CV";
+      dependencyDirs = {
+        themes = ./themes;
+        scripts = ./scripts;
+      };
 
-      # Idiomatic: reference the themes directory directly
-      themesDir = ./themes;
+      python = (pkgs.python3.withPackages (p: with p; [
+        pymupdf
+        jinja2
+      ]));
 
       buildInputs = with pkgs; [
         rendercv
         yq-go # Command-line yaml processor
         json2ansi.packages.${system}.default
+        python
+        tree
       ];
 
       # # Typst with extensions
@@ -51,8 +57,8 @@
         inherit buildInputs;
       };
 
-      packages.${system}.default = pkgs.writeShellApplication {
-        name = scriptName;
+      packages.${system}.default = pkgs.writeShellApplication rec {
+        name = "resume-pipeline";
         runtimeInputs = buildInputs;
         text = ''
         set -euo pipefail
@@ -60,10 +66,28 @@
         # ------------------------------
         #   DIRECTORIES SETUP
         # ------------------------------
+        usage() {
+          echo "Usage: ${name} <input_yaml> [output_basename]"
+          echo "  <input_yaml>: Path to the input YAML file."
+          echo "  [output_basename]: (Optional) Basename for output files (default: resume)"
+        }
+
+        if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
+          usage
+          exit 1
+        fi
+
+        if [ "$#" -ge 2 ]; then
+          resumeFileName="$2"
+        else
+          resumeFileName="resume"
+        fi
+
         INPUT_YAML="$(realpath "$1")"
         OUTPUT_DIR="$(pwd)/result"
         mkdir -p "$OUTPUT_DIR"
         TMPDIR="$(mktemp -d)"
+
 
 
         # ------------------------------
@@ -71,8 +95,12 @@
         # ------------------------------
         
         # [[ copy the themes dir ]]
-        cp -r "${themesDir}" "$TMPDIR/themes"
+        cp -r "${dependencyDirs.themes}" "$TMPDIR/themes"
         chmod -R u+w "$TMPDIR/themes"
+
+        # [[ copy the scripts dir ]]
+        cp -r "${dependencyDirs.scripts}" "$TMPDIR/scripts"
+        chmod -R u+w "$TMPDIR/scripts"
 
         # [[ RUNNING RenderCV ]]
         yq 'del(.design.ansi)' "$INPUT_YAML" > "$TMPDIR/themes/resume.yaml"
@@ -95,16 +123,24 @@
         # ------------------------------
         
         # pdf <- (RenderCV: internally using j2 and typst) <- yaml
-        cp "$TMPDIR/resume.pdf" "$OUTPUT_DIR/${resumeFileName}.pdf"
+        cp "$TMPDIR/resume.pdf" "$OUTPUT_DIR/$resumeFileName.pdf"
 
         # ansi <- json2ansi <- .ansi.json <- (RenderCV: using the markdown template as a work around for now) <- yaml
-        cp "$TMPDIR/resume.ansi" "$OUTPUT_DIR/${resumeFileName}.ansi"
+        cp "$TMPDIR/resume.ansi" "$OUTPUT_DIR/$resumeFileName.ansi"
 
         # cleaned yaml <- (yq) <- yaml
-        cp "$TMPDIR/resume.yaml" "$OUTPUT_DIR/${resumeFileName}.yaml"
+        cp "$TMPDIR/resume.yaml" "$OUTPUT_DIR/$resumeFileName.yaml"
 
         # .ansi.json
-        # cp "$TMPDIR/resume.ansi.json" "$OUTPUT_DIR/${resumeFileName}.ansi.json"
+        # cp "$TMPDIR/resume.ansi.json" "$OUTPUT_DIR/$resumeFileName.ansi.json"
+
+
+        # flattened_pdf_lost_links.html <- (extract_pdf_links.py) <- pdf
+        ${python.interpreter} "$TMPDIR/scripts/extract_pdf_links.py" "$OUTPUT_DIR/$resumeFileName.pdf" > "$OUTPUT_DIR/flattened_pdf_lost_links.html"
+
+        # create an index file
+        # TODO: tree add as a nix dependency
+        cd "$OUTPUT_DIR" && tree -H "" -h -D --timefmt="%Y-%m-%d %z" -o index.html
 
 
 
