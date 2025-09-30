@@ -1,0 +1,76 @@
+name: Build and Deploy Resume
+
+on:
+  workflow_call:
+    inputs:
+      yaml_path:
+        description: 'Path to the resume YAML file'
+        required: true
+        type: string
+      output_basename:
+        description: 'Basename for output files (e.g., resume, cv, etc.)'
+        required: false
+        default: 'resume'
+        type: string
+      save_artifact:
+        description: 'Whether to save the build output as an artifact'
+        required: false
+        default: true
+        type: boolean
+      setup_github_pages:
+        description: 'Whether to deploy to GitHub Pages'
+        required: false
+        default: true
+        type: boolean
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+  actions: write
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+        with:
+          use-flakehub: false
+
+      - name: Build
+        run: nix run github:zyasserd/resume-pipeline "${{ inputs.yaml_path }}" "${{ inputs.output_basename }}"
+
+      # - name: Upload artifact
+      #   if: ${{ inputs.save_artifact }}
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: 'result'
+      #     path: 'result'
+
+      - name: Upload artifact for pages
+        if: ${{ inputs.setup_github_pages || inputs.save_artifact }}
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'result'
+
+      - name: Setup Pages
+        if: ${{ inputs.setup_github_pages }}
+        uses: actions/configure-pages@v5
+
+      - name: Deploy to GitHub Pages
+        if: ${{ inputs.setup_github_pages }}
+        id: deployment
+        uses: actions/deploy-pages@v4
