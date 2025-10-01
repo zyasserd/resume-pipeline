@@ -2,7 +2,7 @@
 
 This repository provides a reproducible pipeline for building resumes using [RenderCV](https://github.com/rendercv/rendercv) and Nix.
 
-It automates the process of converting a YAML resume into multiple output formats (PDF, ANSI, cleaned YAML) using customizable themes and templates.
+It automates the process of converting a [RenderCV YAML resume](https://github.com/rendercv/rendercv/blob/main/schema.json) into multiple output formats (PDF, ANSI, cleaned YAML) using customizable themes and templates.
 The included shell script orchestrates the conversion, theme management, and output generation, making resume creation streamlined and reproducible.
 
 ## Pipeline Overview
@@ -58,47 +58,68 @@ flowchart LR
 To build your resume, run:
 
 ```sh
-nix run github:zyasserd/resume-pipeline <resume.yaml>
+nix run github:zyasserd/resume-pipeline <input_yaml> [output_basename]
+```
+
+### Example
+
+```sh
+# Basic usage (creates resume.pdf, resume.ansi, resume.yaml)
+nix run github:zyasserd/resume-pipeline my-resume.yaml
+
+# Custom output name (creates john-doe.pdf, john-doe.ansi, john-doe.yaml)  
+nix run github:zyasserd/resume-pipeline my-resume.yaml john-doe
 ```
 
 ## Output
 
-After running the pipeline, an `output` directory will be created in your working directory. This folder will contain:
+After running the pipeline, an `result` directory will be created in your working directory. This folder will contain:
 
-- `resume.pdf` (PDF version)
-- `resume.ansi` (ANSI text)
-- `resume.yaml` (Cleaned YAML)
+- `<output_basename>.pdf` (PDF version)
+- `<output_basename>.ansi` (ANSI text)
+- `<output_basename>.yaml` (Cleaned YAML)
+
+In addition, it will also contain:
+- `flattened_pdf_lost_links.html`
+    - containing the lost information in case the PDF is flattened and the links are removed
+- `index.html`
+    - a directory listing
 
 You can customize themes and templates by editing files in the `themes/` directory.
 
+
+## ANSI Output Width
+
+You can control the width of the ANSI-formatted resume output by setting the following field in your YAML file:
+
+```yaml
+design:
+  ansi:
+    width: 80  # Set your desired terminal width (default: 80)
+```
+
+If `design.ansi.width` is not specified, the pipeline uses a default width of **80** characters.  
+This value determines how wide the resume appears in the terminal or ANSI-compatible viewers.
+
+
 <br>
 <br>
 <br>
 
-# TODOs
+## Schema Alternatives
 
-## TODO: RenderCV To-Improve
-- Add a themes directory flag
-- Support different `.j2.ext` formats (e.g., json) as an output target, with themes.
-    - having that combined with json2ansi, would allow RenderCV to have an ANSI target.
-- Make resume.yaml path detection automatic (CLI should compute the path)
-- Allow specifying the typst executable
+This pipeline uses RenderCV's format. Here's how it compares to alternatives:
 
-## TODO: Typst Extensions and Nix
-**Goal:**  
-Achieve fully reproducible builds by ensuring Typst extensions are managed by Nix, not downloaded at runtime.
+#### jsonresume.org
+- **[Schema](https://github.com/jsonresume/resume-schema/blob/master/schema.json)**
+- **Pros:** Well-structured schema, strong community, good HTML themes, GitHub CI integration
+- **Cons:** More restrictive (e.g., limited publications support), no LaTeX support
+- **Tools:** resume-cli (unmaintained), resumed
 
-**Current Issue:**  
-RenderCV uses `messense/typst-py`, which bundles its own Typst binary. This makes it difficult to inject extensions managed by Nix.
+#### RenderCV  
+- **[Schema](https://github.com/rendercv/rendercv/blob/main/schema.json)**
+- **Why chosen:** More flexible format, better suited for diverse resume layouts
 
-**Options:**  
-1. Dynamically load extensions from Nixpkgs into the Typst used by `messense/typst-py`.
-2. Replace the Typst binary in RenderCV with a Nix-built Typst that includes required extensions.
-3. Disable PDF rendering in RenderCV and manually render with a Nix-built Typst (using `typst.withPackages`).
-
-**Note:**
-Currently, Nix only builds the script. At runtime (when building the resume), Typst can access the internet, so extensions may still be fetched dynamically.
-
-## TODO: Others
-- Should you separate content YAML from design YAML?
-
+### Format Conversion
+- **JSON Resume → RenderCV:** [@jsonresume/jsonresume-to-rendercv](https://www.npmjs.com/package/@jsonresume/jsonresume-to-rendercv)
+- **RenderCV → JSON Resume:** isn't that easy

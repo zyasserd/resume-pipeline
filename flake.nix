@@ -110,7 +110,7 @@
         # [[ ANSI PROCESSING ]]
         json2ansi "../resume.ansi.json" \
             --output "../resume.ansi" \
-            --width "$(yq '.design.ansi.width // 100' "$INPUT_YAML")"
+            --width "$(yq '.design.ansi.width // 80' "$INPUT_YAML")"
 
         # [[ YAML PROCESSING ]]
         # removes the 'design' section, and all the comments
@@ -139,7 +139,6 @@
         ${python.interpreter} "$TMPDIR/scripts/extract_pdf_links.py" "$OUTPUT_DIR/$resumeFileName.pdf" > "$OUTPUT_DIR/flattened_pdf_lost_links.html"
 
         # create an index file
-        # TODO: tree add as a nix dependency
         cd "$OUTPUT_DIR" && tree -H "" -h -D --timefmt="%Y-%m-%d %z" -o index.html
 
 
