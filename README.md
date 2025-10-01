@@ -97,10 +97,20 @@ Create a `.github/workflows/resume.yaml` file in your repository:
 
 ```yaml
 name: Build Resume
+
 on:
   push:
     branches: [main]
+
+  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+  actions: write
 
 jobs:
   build:
