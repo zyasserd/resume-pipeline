@@ -2,8 +2,7 @@
 
 This repository provides a reproducible pipeline for building resumes using [RenderCV](https://github.com/rendercv/rendercv) and Nix.
 
-It automates the process of converting a [RenderCV YAML resume](https://github.com/rendercv/rendercv/blob/main/schema.json) into multiple output formats (PDF, ANSI, cleaned YAML) using customizable themes and templates.
-The included shell script orchestrates the conversion, theme management, and output generation, making resume creation streamlined and reproducible.
+It converts [RenderCV YAML resumes](https://github.com/rendercv/rendercv/blob/main/schema.json) into multiple output formats (PDF, ANSI, cleaned YAML) using customizable themes and templates. The pipeline can be run locally via Nix or automated through the included GitHub Actions workflow for deployment to GitHub Pages.
 
 ## Pipeline Overview
 
@@ -86,6 +85,40 @@ In addition, it will also contain:
     - a directory listing
 
 You can customize themes and templates by editing files in the `themes/` directory.
+
+
+## GitHub Actions Integration
+
+This repository includes a reusable GitHub Actions workflow that automatically builds and deploys your resume to GitHub Pages. This is perfect for maintaining an always up-to-date online version of your resume.
+
+### Using the Workflow
+
+Create a `.github/workflows/resume.yaml` file in your repository:
+
+```yaml
+name: Build Resume
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    uses: zyasserd/resume-pipeline/.github/workflows/main.yaml@main
+    with:
+      yaml_path: 'path/to/your/resume.yaml'
+      output_basename: 'resume'  # optional, defaults to 'resume'
+      setup_github_pages: true   # optional, defaults to true
+      save_artifact: true        # optional, defaults to true
+```
+
+### Workflow Features
+
+- **Automatic building**: Triggered on pushes to main branch or manual dispatch
+- **GitHub Pages deployment**: Automatically deploys your resume as a website
+- **Artifact storage**: Saves build outputs for download
+- **Configurable**: Customize output names and deployment settings
+
 
 
 ## ANSI Output Width

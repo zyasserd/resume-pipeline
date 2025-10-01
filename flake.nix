@@ -3,7 +3,10 @@
 
   inputs = {
     nixpkgs.url = "nixpkgs/nixos-unstable";
-    json2ansi.url = "github:zyasserd/json2ansi";
+    json2ansi = {
+      url = "github:zyasserd/json2ansi";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = { self, nixpkgs, json2ansi }:
